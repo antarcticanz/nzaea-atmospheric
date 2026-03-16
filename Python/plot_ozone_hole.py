@@ -68,17 +68,13 @@ def plot_ozone_mass_deficit(write_dir):
     baseline = load_year(write_dir, baseline_year).sort_values("DOY")
     recent = load_year(write_dir, current_year).sort_values("DOY")
 
-    # Map all traces onto current_year dates so x axis is a real date axis.
-    # Stat/envelope traces use DOY mapped to current_year; observed lines use
-    # their actual dates but with the year normalised to current_year so they
-    # align on the same axis.
     def doy_to_date(doy_series, year):
         return pd.to_datetime(
             doy_series.apply(lambda d: f"{year}-{d:03d}"), format="%Y-%j"
         )
 
-    bx = doy_to_date(baseline["DOY"], current_year)   # stat x values
-    rx = doy_to_date(recent["DOY"],   current_year)   # recent x values
+    bx = doy_to_date(baseline["DOY"], current_year)
+    rx = doy_to_date(recent["DOY"],   current_year)
 
     fig = go.Figure()
 
@@ -88,7 +84,7 @@ def plot_ozone_mass_deficit(write_dir):
 
     fig.add_trace(go.Scatter(
         x=bx, y=baseline["Maximum"],
-        mode="lines", line=dict(color="black", width=1),
+        mode="lines", line=dict(color="rgba(105,179,162,0.8)", width=1),
         name="Min/Max",
         showlegend=True,
         customdata=baseline["Minimum"],
@@ -97,47 +93,47 @@ def plot_ozone_mass_deficit(write_dir):
 
     fig.add_trace(go.Scatter(
         x=bx, y=baseline["Minimum"],
-        mode="lines", line=dict(color="black", width=1),
+        mode="lines", line=dict(color="rgba(105,179,162,0.8)", width=1),
         name="Min/Max",
         showlegend=False,
         hoverinfo="skip",
     ))
 
     # ---------------------------
-    # 10–90% SHADED ENVELOPE
+    # 10–90% SHADED ENVELOPE  (teal — outer band)
     # ---------------------------
 
     fig.add_trace(go.Scatter(
         x=pd.concat([bx, bx[::-1]]),
         y=pd.concat([baseline["90%"], baseline["10%"][::-1]]),
-        fill="toself", fillcolor="rgba(192,192,192,0.6)",
+        fill="toself", fillcolor="rgba(105,179,162,0.28)",
         line=dict(color="rgba(255,255,255,0)"),
         name="10–90%", hoverinfo="skip", showlegend=True,
     ))
 
     fig.add_trace(go.Scatter(
         x=bx, y=baseline["90%"],
-        mode="lines", line=dict(color="rgba(192,192,192,1)"),
+        mode="lines", line=dict(color="rgba(105,179,162,0)"),
         name="10–90%", showlegend=False,
         customdata=baseline["10%"],
         hovertemplate="10–90%%: %{customdata:.1f}–%{y:.1f} Mt<extra></extra>",
     ))
 
     # ---------------------------
-    # 30–70% SHADED ENVELOPE
+    # 30–70% SHADED ENVELOPE  (blue — inner band)
     # ---------------------------
 
     fig.add_trace(go.Scatter(
         x=pd.concat([bx, bx[::-1]]),
         y=pd.concat([baseline["70%"], baseline["30%"][::-1]]),
-        fill="toself", fillcolor="rgba(128,128,128,0.7)",
+        fill="toself", fillcolor="rgba(31,120,180,0.22)",
         line=dict(color="rgba(255,255,255,0)"),
         name="30–70%", hoverinfo="skip", showlegend=True,
     ))
 
     fig.add_trace(go.Scatter(
         x=bx, y=baseline["70%"],
-        mode="lines", line=dict(color="rgba(128,128,128,1)"),
+        mode="lines", line=dict(color="rgba(31,120,180,0)"),
         name="30–70%", showlegend=False,
         customdata=baseline["30%"],
         hovertemplate="30–70%%: %{customdata:.1f}–%{y:.1f} Mt<extra></extra>",
@@ -149,7 +145,7 @@ def plot_ozone_mass_deficit(write_dir):
 
     fig.add_trace(go.Scatter(
         x=bx, y=baseline["Mean"],
-        mode="lines", line=dict(color="black", width=2),
+        mode="lines", line=dict(color="#1f78b4", width=2),
         name=f"Mean (1979–{baseline_year})",
         hovertemplate="Mean: %{y:.1f} Mt<extra></extra>",
     ))
@@ -158,16 +154,15 @@ def plot_ozone_mass_deficit(write_dir):
     # BASELINE YEAR OBSERVED
     # ---------------------------
 
+
     fig.add_trace(go.Scatter(
         x=bx, y=baseline["Data"],
-        mode="lines", line=dict(color="red", width=2),
+        mode="lines", line=dict(color="#e31a1c", width=1.6, dash="dash"),
         name=str(baseline_year),
         hovertemplate=f"{baseline_year}: %{{y:.1f}} Mt<extra></extra>",
     ))
-
     # ---------------------------
     # CURRENT YEAR OBSERVED
-    # Reindex recent data onto baseline DOY so x values align for unified hover
     # ---------------------------
 
     recent_aligned = baseline[["DOY"]].merge(
