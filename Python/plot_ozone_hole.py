@@ -1,0 +1,223 @@
+from pathlib import Path
+from datetime import datetime
+import pandas as pd
+import plotly.graph_objects as go
+import io
+
+
+# =====================================================
+# READ LOCAL FILE
+# =====================================================
+
+def _read_omd_file(fp: Path):
+
+    with open(fp, "r") as f:
+        lines = f.readlines()
+
+    start = next(i for i, ln in enumerate(lines) if ln.startswith("Date"))
+    table = "".join(lines[start:])
+
+    df = pd.read_csv(
+        io.StringIO(table),
+        sep=r'\s+',
+        na_values='-9999.0'
+    )
+
+    df["Date"] = pd.to_datetime(df["Date"])
+    df["Year"] = df["Date"].dt.year
+    df["DOY"] = df["Date"].dt.dayofyear
+
+    return df
+
+
+# =====================================================
+# LOAD ONE YEAR
+# =====================================================
+
+def load_year(write_dir, year):
+
+    write_dir = Path(write_dir)
+    fp = write_dir / f"omds_{year}.txt"
+
+    if not fp.exists():
+        raise FileNotFoundError(f"{fp} not found.")
+
+    return _read_omd_file(fp)
+
+
+def get_plot_data(write_dir):
+
+    current_year = datetime.now().year
+    baseline_year = current_year - 1
+
+    baseline = load_year(write_dir, baseline_year).sort_values("DOY")
+    recent = load_year(write_dir, current_year).sort_values("DOY")
+
+    return baseline, recent
+
+
+# =====================================================
+# PLOT
+# =====================================================
+
+def plot_ozone_mass_deficit(write_dir):
+
+    current_year = datetime.now().year
+    baseline_year = current_year - 1
+
+    baseline = load_year(write_dir, baseline_year).sort_values("DOY")
+    recent = load_year(write_dir, current_year).sort_values("DOY")
+
+    # Map all traces onto current_year dates so x axis is a real date axis.
+    # Stat/envelope traces use DOY mapped to current_year; observed lines use
+    # their actual dates but with the year normalised to current_year so they
+    # align on the same axis.
+    def doy_to_date(doy_series, year):
+        return pd.to_datetime(
+            doy_series.apply(lambda d: f"{year}-{d:03d}"), format="%Y-%j"
+        )
+
+    bx = doy_to_date(baseline["DOY"], current_year)   # stat x values
+    rx = doy_to_date(recent["DOY"],   current_year)   # recent x values
+
+    fig = go.Figure()
+
+    # ---------------------------
+    # MIN / MAX LINES
+    # ---------------------------
+
+    fig.add_trace(go.Scatter(
+        x=bx, y=baseline["Maximum"],
+        mode="lines", line=dict(color="black", width=1),
+        name="Min/Max",
+        showlegend=True,
+        customdata=baseline["Minimum"],
+        hovertemplate="Min/Max: %{customdata:.1f}–%{y:.1f} Mt<extra></extra>",
+    ))
+
+    fig.add_trace(go.Scatter(
+        x=bx, y=baseline["Minimum"],
+        mode="lines", line=dict(color="black", width=1),
+        name="Min/Max",
+        showlegend=False,
+        hoverinfo="skip",
+    ))
+
+    # ---------------------------
+    # 10–90% SHADED ENVELOPE
+    # ---------------------------
+
+    fig.add_trace(go.Scatter(
+        x=pd.concat([bx, bx[::-1]]),
+        y=pd.concat([baseline["90%"], baseline["10%"][::-1]]),
+        fill="toself", fillcolor="rgba(192,192,192,0.6)",
+        line=dict(color="rgba(255,255,255,0)"),
+        name="10–90%", hoverinfo="skip", showlegend=True,
+    ))
+
+    fig.add_trace(go.Scatter(
+        x=bx, y=baseline["90%"],
+        mode="lines", line=dict(color="rgba(192,192,192,1)"),
+        name="10–90%", showlegend=False,
+        customdata=baseline["10%"],
+        hovertemplate="10–90%%: %{customdata:.1f}–%{y:.1f} Mt<extra></extra>",
+    ))
+
+    # ---------------------------
+    # 30–70% SHADED ENVELOPE
+    # ---------------------------
+
+    fig.add_trace(go.Scatter(
+        x=pd.concat([bx, bx[::-1]]),
+        y=pd.concat([baseline["70%"], baseline["30%"][::-1]]),
+        fill="toself", fillcolor="rgba(128,128,128,0.7)",
+        line=dict(color="rgba(255,255,255,0)"),
+        name="30–70%", hoverinfo="skip", showlegend=True,
+    ))
+
+    fig.add_trace(go.Scatter(
+        x=bx, y=baseline["70%"],
+        mode="lines", line=dict(color="rgba(128,128,128,1)"),
+        name="30–70%", showlegend=False,
+        customdata=baseline["30%"],
+        hovertemplate="30–70%%: %{customdata:.1f}–%{y:.1f} Mt<extra></extra>",
+    ))
+
+    # ---------------------------
+    # CLIMATOLOGICAL MEAN
+    # ---------------------------
+
+    fig.add_trace(go.Scatter(
+        x=bx, y=baseline["Mean"],
+        mode="lines", line=dict(color="black", width=2),
+        name=f"Mean (1979–{baseline_year})",
+        hovertemplate="Mean: %{y:.1f} Mt<extra></extra>",
+    ))
+
+    # ---------------------------
+    # BASELINE YEAR OBSERVED
+    # ---------------------------
+
+    fig.add_trace(go.Scatter(
+        x=bx, y=baseline["Data"],
+        mode="lines", line=dict(color="red", width=2),
+        name=str(baseline_year),
+        hovertemplate=f"{baseline_year}: %{{y:.1f}} Mt<extra></extra>",
+    ))
+
+    # ---------------------------
+    # CURRENT YEAR OBSERVED
+    # Reindex recent data onto baseline DOY so x values align for unified hover
+    # ---------------------------
+
+    recent_aligned = baseline[["DOY"]].merge(
+        recent[["DOY", "Data"]], on="DOY", how="left"
+    )
+
+    fig.add_trace(go.Scatter(
+        x=bx, y=recent_aligned["Data"],
+        mode="lines", line=dict(color="blue", width=2),
+        name=str(current_year),
+        hovertemplate=f"{current_year}: %{{y:.1f}} Mt<extra></extra>",
+    ))
+
+    # ---------------------------
+    # LAYOUT
+    # ---------------------------
+
+    fig.update_layout(
+        title=dict(text="Daily Ozone Mass Deficit", font=dict(size=18)),
+        xaxis=dict(
+            title="",
+            tickformat="%b",
+            dtick="M1",
+            showgrid=False,
+        ),
+        yaxis=dict(
+            title="Million Tons",
+            showgrid=False,
+            showline=True,
+            linecolor="black",
+            linewidth=1,
+            ticklabelstandoff=8,
+            range=[None, 50],
+        ),
+        legend=dict(
+            bgcolor="white",
+            bordercolor="black",
+            borderwidth=1,
+            x=1.02,
+            y=1,
+            xanchor="left",
+            yanchor="top",
+        ),
+        hovermode="x unified",
+        xaxis_hoverformat="%-d %b",
+        hoverlabel=dict(namelength=-1),
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        width=1100,
+        height=500,
+    )
+
+    return fig
