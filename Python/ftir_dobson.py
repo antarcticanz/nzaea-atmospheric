@@ -29,7 +29,7 @@ def read_hdf_file(filepath):
         # Check this file actually has O3 data
         datasets = ds.datasets()
         if 'O3.COLUMN_ABSORPTION.SOLAR' not in datasets:
-            print(f"  SKIP (no O3): {os.path.basename(filepath)}")
+            #print(f"  SKIP (no O3): {os.path.basename(filepath)}")
             ds.end()
             return None
 
@@ -48,7 +48,7 @@ def read_hdf_file(filepath):
             'source_file': os.path.basename(filepath)
         })
 
-        print(f"  OK ({len(df)} obs): {os.path.basename(filepath)}")
+        #print(f"  OK ({len(df)} obs): {os.path.basename(filepath)}")
         return df
 
     except Exception as e:
@@ -79,7 +79,7 @@ def merge_hdf_directory(data_dir, output_file):
         for f in os.listdir(data_dir)
         if f.endswith('.hdf')
     ]
-    print(f"Found {len(hdf_files)} HDF files\n")
+    # print(f"Found {len(hdf_files)} HDF files\n")
 
     # ── Read all files ───────────────────────────────────────────────────
     dfs = []
@@ -95,16 +95,16 @@ def merge_hdf_directory(data_dir, output_file):
     merged = pd.concat(dfs, ignore_index=True)
     merged = merged.sort_values('datetime').reset_index(drop=True)
 
-    print(f"\nMerged dataset: {len(merged)} total observations")
-    print(f"Date range: {merged['datetime'].min()} → {merged['datetime'].max()}")
-    print(merged.head())
+    # print(f"\nMerged dataset: {len(merged)} total observations")
+    # print(f"Date range: {merged['datetime'].min()} → {merged['datetime'].max()}")
+    # print(merged.head())
 
     # ── Ensure output directory exists ───────────────────────────────────
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
     # ── Write to CSV ─────────────────────────────────────────────────────
     merged.to_csv(output_file, index=False)
-    print(f"\nSaved to: {output_file}")
+    # print(f"\nSaved to: {output_file}")
 
     return merged
 
