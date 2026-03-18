@@ -109,6 +109,110 @@ def merge_hdf_directory(data_dir, output_file):
     return merged
 
 
+# def plot_ftir(merged, year_colors=None):
+#     """
+#     Plot O3 total column in Dobson Units vs day of year (day 200 onwards),
+#     with 1996-2019 as a grey background and individual years from 2020
+#     plotted in distinct colors.
+
+#     Parameters
+#     ----------
+#     merged : pd.DataFrame
+#         Merged DataFrame from merge_hdf_directory(), with columns:
+#         datetime, o3_column, source_file.
+#     year_colors : dict, optional
+#         Mapping of {year: color} for foreground years (2020+).
+#         Defaults to {2020: 'green', 2021: 'blue', 2022: 'orange', 2023: 'red'}.
+
+#     Returns
+#     -------
+#     plotly.graph_objects.Figure
+#     """
+#     # if year_colors is None:
+#     #     year_colors = {
+#     #         2020: 'green',
+#     #         2021: 'blue',
+#     #         2022: 'orange',
+#     #         2023: 'red',
+#     #     }
+
+#     if year_colors is None:
+#         year_colors = {
+#             2020: '#6a3d9a',
+#             2021: 'rgba(105,179,162,0.85)',
+#             2022: '#1f77b4',
+#             2023: '#e31a1c',
+#         }
+
+#     # ── Prep data ─────────────────────────────────────────────────────────
+#     df = merged.copy()
+#     df['datetime']    = pd.to_datetime(df['datetime'])
+#     df['year']        = df['datetime'].dt.year
+#     df['day_of_year'] = df['datetime'].dt.dayofyear
+#     df['o3_du']       = df['o3_column'] * MOLEC_PER_CM2_TO_DU
+
+#     # ── Filter to day 200 onwards ─────────────────────────────────────────
+#     df = df[df['day_of_year'] >= 200]
+
+#     # ── Build figure ──────────────────────────────────────────────────────
+#     fig = go.Figure()
+
+#     # Background: pre-2020 (grey)
+#     bg = df[df['year'] < 2020]
+#     fig.add_trace(go.Scatter(
+#         x=bg['day_of_year'],
+#         y=bg['o3_du'],
+#         mode='markers',
+#         marker=dict(color='darkgrey', size=5, opacity=0.7),
+#         name='1996–2019',
+#         hovertemplate='Day: %{x}<br>O₃: %{y:.1f} DU<br>%{text}',
+#         text=bg['datetime'].dt.strftime('%Y-%m-%d')
+#     ))
+
+#     # Foreground: explicit colors per year
+#     for year, color in year_colors.items():
+#         yd = df[df['year'] == year]
+#         if len(yd) == 0:
+#             continue
+#         fig.add_trace(go.Scatter(
+#             x=yd['day_of_year'],
+#             y=yd['o3_du'],
+#             mode='markers',
+#             marker=dict(color=color, size=7, opacity=0.85),
+#             name=str(year),
+#             hovertemplate='Day: %{x}<br>O₃: %{y:.1f} DU<br>%{text}',
+#             text=yd['datetime'].dt.strftime('%Y-%m-%d')
+#         ))
+
+#     # ── Layout ────────────────────────────────────────────────────────────
+#     fig.update_layout(
+#         title='MIR-FTIR O3: Arrival Heights total column',
+#         xaxis=dict(
+#             title='',
+#             tickmode='array',
+#             tickvals=[182, 213, 244, 274, 305, 335, 366],
+#             ticktext=['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan'],
+#             range=[200, 366],
+#             showgrid=False,
+#         ),
+#         yaxis=dict(title='Dobson units'),
+#         legend=dict(title='Year', itemsizing='constant'),
+#         hovermode='closest',
+#         template='plotly_white',
+#         width=1000,
+#         height=600
+#     )
+
+#     return fig
+
+
+# if __name__ == "__main__":
+#     DATA_DIR    = r"C:\Users\ANTNZDEV\michaelmeredythyoung\github\nzaea-atmospheric\data\ftir"
+#     OUTPUT_FILE = r"C:\Users\ANTNZDEV\michaelmeredythyoung\github\nzaea-atmospheric\data\ftir\merged_data\ftir_o3_merged.csv"
+
+#     merged = merge_hdf_directory(DATA_DIR, OUTPUT_FILE)
+
+
 def plot_ftir(merged, year_colors=None):
     """
     Plot O3 total column in Dobson Units vs day of year (day 200 onwards),
@@ -122,7 +226,6 @@ def plot_ftir(merged, year_colors=None):
         datetime, o3_column, source_file.
     year_colors : dict, optional
         Mapping of {year: color} for foreground years (2020+).
-        Defaults to {2020: 'green', 2021: 'blue', 2022: 'orange', 2023: 'red'}.
 
     Returns
     -------
@@ -130,18 +233,22 @@ def plot_ftir(merged, year_colors=None):
     """
     if year_colors is None:
         year_colors = {
-            2020: 'green',
-            2021: 'blue',
-            2022: 'orange',
-            2023: 'red',
+            2020: '#6a3d9a',
+            2021: 'rgba(105,179,162,0.85)',
+            2022: '#1f77b4',
+            2023: '#e31a1c',
         }
 
     # ── Prep data ─────────────────────────────────────────────────────────
     df = merged.copy()
-    df['datetime']    = pd.to_datetime(df['datetime'])
-    df['year']        = df['datetime'].dt.year
+    df['datetime'] = pd.to_datetime(df['datetime'])
+    df['year'] = df['datetime'].dt.year
     df['day_of_year'] = df['datetime'].dt.dayofyear
-    df['o3_du']       = df['o3_column'] * MOLEC_PER_CM2_TO_DU
+    df['o3_du'] = df['o3_column'] * MOLEC_PER_CM2_TO_DU
+
+    df['hover_date'] = pd.to_datetime(df['year'].astype(
+        str) + '-01-01') + pd.to_timedelta(df['day_of_year'] - 1, unit='D')
+    df['hover_date_str'] = df['hover_date'].dt.strftime('%#d %b')
 
     # ── Filter to day 200 onwards ─────────────────────────────────────────
     df = df[df['day_of_year'] >= 200]
@@ -157,8 +264,8 @@ def plot_ftir(merged, year_colors=None):
         mode='markers',
         marker=dict(color='darkgrey', size=5, opacity=0.7),
         name='1996–2019',
-        hovertemplate='Day: %{x}<br>O₃: %{y:.1f} DU<br>%{text}',
-        text=bg['datetime'].dt.strftime('%Y-%m-%d')
+        hovertemplate='1996–2019<br>Date: %{text}<br>Ozone: %{y:.1f} DU<extra></extra>',
+        text=bg['hover_date_str']
     ))
 
     # Foreground: explicit colors per year
@@ -172,14 +279,21 @@ def plot_ftir(merged, year_colors=None):
             mode='markers',
             marker=dict(color=color, size=7, opacity=0.85),
             name=str(year),
-            hovertemplate='Day: %{x}<br>O₃: %{y:.1f} DU<br>%{text}',
-            text=yd['datetime'].dt.strftime('%Y-%m-%d')
+            hovertemplate=f'{year}<br>Date: %{{text}}<br>Ozone: %{{y:.1f}} DU<extra></extra>',
+            text=yd['hover_date_str']
         ))
 
     # ── Layout ────────────────────────────────────────────────────────────
     fig.update_layout(
-        title='MIR-FTIR O3: Arrival Heights total column',
-        xaxis=dict(title='Day of Year', range=[200, 366]),
+        title='MIR-FTIR O3 Total Column: Arrival Heights',
+        xaxis=dict(
+            title='',
+            tickmode='array',
+            tickvals=[182, 213, 244, 274, 305, 335, 366],
+            ticktext=['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan'],
+            range=[200, 366],
+            showgrid=False,
+        ),
         yaxis=dict(title='Dobson units'),
         legend=dict(title='Year', itemsizing='constant'),
         hovermode='closest',
@@ -189,10 +303,3 @@ def plot_ftir(merged, year_colors=None):
     )
 
     return fig
-
-
-if __name__ == "__main__":
-    DATA_DIR    = r"C:\Users\ANTNZDEV\michaelmeredythyoung\github\nzaea-atmospheric\data\ftir"
-    OUTPUT_FILE = r"C:\Users\ANTNZDEV\michaelmeredythyoung\github\nzaea-atmospheric\data\ftir\merged_data\ftir_o3_merged.csv"
-
-    merged = merge_hdf_directory(DATA_DIR, OUTPUT_FILE)

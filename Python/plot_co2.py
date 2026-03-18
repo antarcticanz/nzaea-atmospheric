@@ -72,9 +72,9 @@ def plot_co2(
     ds = ds.assign_coords(time=("time", time))
 
     # --------------------------------------------------
-    # 3. Select CO₂ mole fraction (WMO scale) + QC
+    # 3. Select CO₂ mole fraction
     # --------------------------------------------------
-    co2 = ds["value_wmo_scale"].where(ds["QCflag"] <= 2)
+    co2 = ds["value"]
 
     df = (
         co2.to_dataframe(name="CO2_ppm")
@@ -101,7 +101,7 @@ def plot_co2(
         exog=x_numeric,
         frac=loess_frac,
         return_sorted=False,
-    ).round(1)  # round to 1 decimal place for presentation
+    ).round(0)  # round to 1 decimal place for presentation
 
     # --------------------------------------------------
     # 6. Plot
@@ -117,7 +117,7 @@ def plot_co2(
             name="Observed",
             marker=dict(
                 size=8,
-                color="#1f78b4",
+                color="#1f77b4",
                 opacity=0.9,
             ),
         )
@@ -188,5 +188,5 @@ if __name__ == "__main__":
         sys.exit(1)
 
     nc_file = sys.argv[1]
-    fig = plot_co2_loess(nc_file)
+    fig = plot_co2(nc_file)
     fig.show()
