@@ -24,7 +24,7 @@ from statsmodels.nonparametric.smoothers_lowess import lowess
 def plot_ch4(
     nc_path: str | Path,
     year_min: int = 1992,
-    y_range: tuple[float, float] = (1500, 2000),
+    y_range: tuple[float, float] = (1600, 1950),
     loess_frac: float = 0.1,
 ) -> go.Figure:
     """
@@ -142,7 +142,7 @@ def plot_ch4(
     )
 
     fig.update_layout(
-        title="Atmospheric Methane at Arrival Heights",
+        title="Atmospheric Methane CH<sub>4</sub> at Arrival Heights",
         template="plotly_white",
         hovermode="x unified",
 
@@ -163,7 +163,7 @@ def plot_ch4(
         ),
 
         yaxis=dict(
-            title="Methane Mole Fraction (ppb)",
+            title="CH<sub>4</sub> Mole Fraction (ppb)",
             range=list(y_range),
             showline=True,
             linewidth=1.3,

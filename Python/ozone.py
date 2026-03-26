@@ -270,7 +270,6 @@ def plot_sh_ozone_hole_area_annual(
         xmin = int(df_valid["Year"].min())
         xmax = int(df_valid["Year"].max())
         xaxis_cfg = dict(
-            title="Year",
             tickmode="linear",
             tick0=xmin,
             dtick=1,

@@ -24,7 +24,7 @@ from statsmodels.nonparametric.smoothers_lowess import lowess
 def plot_n20(
     nc_path: str | Path,
     year_min: int = 1996,
-    y_range: tuple[float, float] = (0, 500),
+    y_range: tuple[float, float] = (300, 350),
     loess_frac: float = 0.1,
 ) -> go.Figure:
     """
@@ -142,7 +142,7 @@ def plot_n20(
     )
 
     fig.update_layout(
-        title="Atmospheric Nitrous Oxide at Arrival Heights",
+        title="Atmospheric Nitrous Oxide (N<sub>2</sub>)O) at Arrival Heights",
         template="plotly_white",
         hovermode="x unified",
 
@@ -163,7 +163,7 @@ def plot_n20(
         ),
 
         yaxis=dict(
-            title="Nitrous Oxide Mole Fraction (ppb)",
+            title=" N<sub>2</sub>)O Mole Fraction (ppb)",
             range=list(y_range),
             showline=True,
             linewidth=1.3,

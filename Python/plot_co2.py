@@ -138,7 +138,7 @@ def plot_co2(
     )
 
     fig.update_layout(
-        title="Atmospheric Carbon Dioxide at Arrival Heights",
+        title="Atmospheric Carbon Dioxide (CO<sub>2</sub>) at Arrival Heights",
         template="plotly_white",
         hovermode="x unified",
 
@@ -157,7 +157,7 @@ def plot_co2(
         ),
 
         yaxis=dict(
-            title="Carbon Dioxide Mole Fraction (ppm)",
+            title="CO<sub>2</sub> Mole Fraction (ppm)",
             range=list(y_range),
             showline=True,
             linewidth=1.3,
