@@ -294,19 +294,3 @@ def compute_daily_max_uv(
         daily_max = daily_max.drop(columns=["season_year"])
 
     return daily_max
-
-
-# --------------------------------------------------
-# Optional CLI
-# --------------------------------------------------
-if __name__ == "__main__":
-    import sys
-
-    if len(sys.argv) < 3:
-        print("Usage: python compute_daily_max_uvi.py input.csv output.csv")
-        sys.exit(1)
-
-    inp, out = sys.argv[1], sys.argv[2]
-    result = compute_daily_max_uvi(inp)
-    result.to_csv(out, index=False)
-    print(f"Wrote daily max UV to {out}")

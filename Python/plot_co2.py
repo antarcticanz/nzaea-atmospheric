@@ -177,16 +177,3 @@ def plot_co2(
     )
 
     return fig
-
-
-# --------------------------------------------------
-# Script entry point
-# --------------------------------------------------
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python plot_co2_loess.py path/to/file.nc")
-        sys.exit(1)
-
-    nc_file = sys.argv[1]
-    fig = plot_co2(nc_file)
-    fig.show()

@@ -124,14 +124,3 @@ def update_ozone_deficit_archive(write_dir: Path | str):
             break
 
     print("\n✅ Archive update complete.\n")
-
-
-# ---------------- ENTRY POINT (OPTIONAL) ---------------- #
-
-if __name__ == "__main__":
-
-    DEFAULT_DIR = Path(
-        r"C:\Users\ANTNZDEV\michaelmeredythyoung\github\nzaea-atmospheric\data\ozone\daily_ozone_deficit"
-    )
-
-    update_ozone_deficit_archive(DEFAULT_DIR)

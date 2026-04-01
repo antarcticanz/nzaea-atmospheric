@@ -184,16 +184,3 @@ def plot_n20(
     )
 
     return fig
-
-
-# --------------------------------------------------
-# Script entry point
-# --------------------------------------------------
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python plot_n20_loess.py path/to/file.nc")
-        sys.exit(1)
-
-    nc_file = sys.argv[1]
-    fig = plot_n20(nc_file)
-    fig.show()
