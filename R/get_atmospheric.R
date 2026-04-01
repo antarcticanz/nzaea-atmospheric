@@ -25,7 +25,7 @@ file_string <- paste0(
 # Run the downloads; collect per-file outcome
 results <- lapply(file_string, function(x) {
   dest <- file.path(
-    "C:/Users/ANTNZDEV/michaelmeredythyoung/github/atmospheric/data",
+    "C:/Users/ANTNZDEV/michaelmeredythyoung/github/atmospheric/data/uvspect",
     basename(x)
   )
   
