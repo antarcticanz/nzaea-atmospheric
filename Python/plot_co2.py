@@ -138,7 +138,7 @@ def plot_co2(
     )
 
     fig.update_layout(
-        title="Atmospheric Carbon Dioxide (CO<sub>2</sub>) at Arrival Heights",
+        title="Atmospheric Carbon Dioxide (CO<sub>2</sub>), Arrival Heights, Antarctica, 2004-2021",
         template="plotly_white",
         hovermode="x unified",
 

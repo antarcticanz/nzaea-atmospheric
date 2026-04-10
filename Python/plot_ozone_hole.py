@@ -85,16 +85,16 @@ def plot_ozone_mass_deficit(write_dir):
     fig.add_trace(go.Scatter(
         x=bx, y=baseline["Maximum"],
         mode="lines", line=dict(color="rgba(105,179,162,0.8)", width=1),
-        name="Min/Max",
+        name="Range (min-max)",
         showlegend=True,
         customdata=baseline["Minimum"],
-        hovertemplate="Min/Max: %{customdata:.1f}–%{y:.1f} Mt<extra></extra>",
+        hovertemplate="Min-Max: %{customdata:.1f}–%{y:.1f} Mt<extra></extra>",
     ))
 
     fig.add_trace(go.Scatter(
         x=bx, y=baseline["Minimum"],
         mode="lines", line=dict(color="rgba(105,179,162,0.8)", width=1),
-        name="Min/Max",
+        name="Min-Max",
         showlegend=False,
         hoverinfo="skip",
     ))
@@ -108,13 +108,13 @@ def plot_ozone_mass_deficit(write_dir):
         y=pd.concat([baseline["90%"], baseline["10%"][::-1]]),
         fill="toself", fillcolor="rgba(105,179,162,0.28)",
         line=dict(color="rgba(255,255,255,0)"),
-        name="10–90%", hoverinfo="skip", showlegend=True,
+        name="Outer (10–90%)", hoverinfo="skip", showlegend=True,
     ))
 
     fig.add_trace(go.Scatter(
         x=bx, y=baseline["90%"],
         mode="lines", line=dict(color="rgba(105,179,162,0)"),
-        name="10–90%", showlegend=False,
+        name="Outer (10–90%)", showlegend=False,
         customdata=baseline["10%"],
         hovertemplate="10–90%%: %{customdata:.1f}–%{y:.1f} Mt<extra></extra>",
     ))
@@ -128,7 +128,7 @@ def plot_ozone_mass_deficit(write_dir):
         y=pd.concat([baseline["70%"], baseline["30%"][::-1]]),
         fill="toself", fillcolor="rgba(31,120,180,0.22)",
         line=dict(color="rgba(255,255,255,0)"),
-        name="30–70%", hoverinfo="skip", showlegend=True,
+        name="Inner (30–70%)", hoverinfo="skip", showlegend=True,
     ))
 
     fig.add_trace(go.Scatter(
@@ -146,7 +146,7 @@ def plot_ozone_mass_deficit(write_dir):
     fig.add_trace(go.Scatter(
         x=bx, y=baseline["Mean"],
         mode="lines", line=dict(color="#1f78b4", width=2),
-        name=f"Mean (1979–{baseline_year})",
+        name=f"Mean",
         hovertemplate="Mean: %{y:.1f} Mt<extra></extra>",
     ))
 
@@ -181,7 +181,7 @@ def plot_ozone_mass_deficit(write_dir):
     # ---------------------------
 
     fig.update_layout(
-        title=dict(text="Daily Ozone Mass Deficit", font=dict(size=18)),
+        title=dict(text="Daily Ozone Mass Deficit, 1979-2025", font=dict(size=18)),
         xaxis=dict(
             title="",
             tickformat="%b",
@@ -196,14 +196,14 @@ def plot_ozone_mass_deficit(write_dir):
             linewidth=1,
             ticklabelstandoff=8,
             range=[None, 50],
+
         ),
         legend=dict(
             bgcolor="white",
-            bordercolor="black",
-            borderwidth=1,
-            x=1.02,
-            y=1,
-            xanchor="left",
+            orientation="h",
+            x=0.5,
+            y=-0.18,
+            xanchor="center",
             yanchor="top",
         ),
         hovermode="x unified",

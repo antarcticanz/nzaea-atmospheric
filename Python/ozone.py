@@ -288,7 +288,13 @@ def plot_sh_ozone_hole_area_annual(
             "Name", "Southern Hemisphere Ozone Hole Area") if meta else "Southern Hemisphere Ozone Hole Area",
         xaxis=xaxis_cfg,
         yaxis=dict(
-            title=f"Area ({_sanitize_units(meta.get('Units') if meta else 'million km²')})"),
+            title=f"Area ({_sanitize_units(meta.get('Units') if meta else 'million km²')})",
+            showgrid=False,
+            showline=True,
+            linewidth=1.3,
+            linecolor="black",
+            zeroline=False,
+        ),
         hovermode="x unified",
         legend=dict(
             orientation="h",
@@ -301,5 +307,11 @@ def plot_sh_ozone_hole_area_annual(
         margin=dict(l=60, r=20, t=70, b=0),
         height=520
     )
+
+
+    fig.update_xaxes(showgrid=False,
+                     showline=True,
+                     linewidth=1.3,
+                     linecolor="black",)
 
     return fig

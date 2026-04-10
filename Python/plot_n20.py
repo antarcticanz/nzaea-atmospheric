@@ -142,7 +142,7 @@ def plot_n20(
     )
 
     fig.update_layout(
-        title="Atmospheric Nitrous Oxide (N<sub>2</sub>)O) at Arrival Heights",
+        title="Atmospheric Nitrous Oxide (N<sub>2</sub>O) at Arrival Heights",
         template="plotly_white",
         hovermode="x unified",
 

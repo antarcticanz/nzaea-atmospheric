@@ -177,7 +177,7 @@ def plot_dobson_ftir(merged):
         fillcolor="rgba(105,179,162,0.28)",
         mode="lines",
         line=dict(width=0),
-        name="2.5–97.5% range",
+        name="Range (2.5–97.5%)",
         hovertemplate=(
             "2.5–97.5%: "
             "%{y:.1f}–%{customdata:.1f} DU"
@@ -231,7 +231,7 @@ def plot_dobson_ftir(merged):
 
     # ── Layout ───────────────────────────────────────────────────────────
     fig.update_layout(
-        title="Ozone (O₃) Total Column, (Arrival Heights, Antarctica)",
+        title="Ozone (O₃) Total Column, Arrival Heights, Antarctica",
         hovermode="x unified",
         xaxis=dict(
             range=[
@@ -246,11 +246,19 @@ def plot_dobson_ftir(merged):
                 pd.Timestamp("2001-12-01"),
                 pd.Timestamp("2002-01-01"),
             ],
-            title=""
+            title="",
+            showgrid=False,
+            showline=True,
+            linewidth=1.3,
+            linecolor="black",
         ),
         yaxis=dict(
             title="Ozone (Dobson Units)",
-            range=[100, 500]
+            range=[100, 500],
+            showgrid=False,
+            showline=True,
+            linewidth=1.3,
+            linecolor="black",
         ),
         legend=dict(
             orientation="h",        # horizontal legend

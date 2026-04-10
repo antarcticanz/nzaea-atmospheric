@@ -73,7 +73,10 @@ def plot_eeasc(
 
     fig.update_layout(
         title=title,
-        xaxis=dict(tickmode="linear", showgrid=False),
+        xaxis=dict(tickmode="linear", 
+                   showgrid=False,
+                   tickangle=-45,
+                   tickfont=dict(size=12)),
         yaxis=dict(
             title="Equivalent Effective Antarctic<br>Stratospheric Chlorine (ppb)",
             side="right",
