@@ -733,8 +733,10 @@ def plot_daily_uvi(
                 mode="lines",
                 line=dict(color="#e31a1c", width=1.6, dash="dash"),
                 connectgaps=False,
-                hovertemplate=f"UVI Max {year_to_overlay}: %{{y:.2f}}<extra></extra>",
+                #hovertemplate=f"UVI Max {year_to_overlay}: %{{y:.2f}}<extra></extra>",
                 #hovertemplate=f"UVI Max {year_to_overlay}: %{{x|%d-%b}}, %{{y:.2f}}<extra></extra>"
+                hovertemplate=f"UVI Max (%{{x|%d-%b}}): %{{y:.2f}}<extra></extra>"
+
             ))
 
     # --------------------------------------------------
@@ -743,7 +745,7 @@ def plot_daily_uvi(
     fig.update_layout(
         title=title,
         template="plotly_white",
-        hovermode="x",
+        hovermode="closest",
         xaxis=dict(
             type="date",
             tickformat="%d-%b",
@@ -1389,7 +1391,7 @@ def plot_raw_uv(
             showline=True,
             linecolor="black",
             zeroline=False,
-            range=[0, 45],
+            range=[0, 50],
 
         ),
         yaxis2=dict(
