@@ -304,7 +304,7 @@ def compute_daily_uv(
     sentinel: float = 9.999e9,
     convert_from_uvery_if_needed: bool = True,
     attach_season_year: bool = True,
-    sky_filter: int = 1,
+    sky_filter: int = 0,
     flag_filter: int = 0,
 ) -> pd.DataFrame:
     """

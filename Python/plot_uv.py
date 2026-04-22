@@ -1208,7 +1208,7 @@ def plot_daily_uv(
         ),
         yaxis=dict(
             title="UVA",
-            range=[0, 45],
+            range=[0, 60],
             side="left",
             showgrid=False,
             showline=True,
