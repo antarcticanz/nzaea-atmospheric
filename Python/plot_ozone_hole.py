@@ -68,6 +68,11 @@ def plot_ozone_mass_deficit(write_dir):
     baseline = load_year(write_dir, baseline_year).sort_values("DOY")
     recent = load_year(write_dir, current_year).sort_values("DOY")
 
+    # --- Filter to July–December (DOY 182–365) ---
+    jul1_doy = datetime(current_year, 7, 1).timetuple().tm_yday
+    baseline = baseline[baseline["DOY"] >= jul1_doy]
+    recent = recent[recent["DOY"] >= jul1_doy]
+
     def doy_to_date(doy_series, year):
         return pd.to_datetime(
             doy_series.apply(lambda d: f"{year}-{d:03d}"), format="%Y-%j"
@@ -187,6 +192,8 @@ def plot_ozone_mass_deficit(write_dir):
             tickformat="%b",
             dtick="M1",
             showgrid=False,
+            range=[f"{current_year}-07-01",
+                   f"{current_year}-12-31"],
         ),
         yaxis=dict(
             title="Million Tons",

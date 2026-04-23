@@ -2,9 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
 import xarray as xr
 import pandas as pd
 import plotly.graph_objects as go
+from scipy.interpolate import PchipInterpolator
+from scipy.ndimage import uniform_filter1d
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 
@@ -17,6 +20,13 @@ def plot_ch4_dual(
     """
     Combined plot of atmospheric CH4 mole fraction (left axis) with LOESS trend,
     and annual rate of change (right axis).
+
+    Input is assumed to be a monthly mean product (e.g. WDCGG NetCDF).
+    PCHIP interpolation fills any missing months before the growth rate
+    is computed using the MATLAB method:
+        grwthrt(i) = mean(months i+1..i+12) - mean(months i-12..i-1)
+    smoothed with a 12-month moving average, edges masked.
+    LOESS is fitted to the filled monthly series for the trend line only.
 
     Parameters
     ----------
@@ -53,7 +63,7 @@ def plot_ch4_dual(
     ds = ds.assign_coords(time=("time", time))
 
     # --------------------------------------------------
-    # 2. Extract CH4 + filter
+    # 2. Extract monthly CH4 values
     # --------------------------------------------------
     df = (
         ds["value"]
@@ -66,111 +76,139 @@ def plot_ch4_dual(
     if df.empty:
         raise ValueError(f"No valid CH4 data found from {year_min} onwards.")
 
-    df["CH4_ppb"] = df["CH4_ppb"].round(0)
+    df["CH4_ppb"] = df["CH4_ppb"].round(1)
+
+    df["year"]  = df["time"].dt.year
+    df["month"] = df["time"].dt.month
 
     # --------------------------------------------------
-    # 3. LOESS smoothing
+    # 3. Build complete monthly spine + PCHIP gap fill
     # --------------------------------------------------
-    x_numeric = df["time"].astype("int64") // 10**9
-    loess_vals = lowess(
-        endog=df["CH4_ppb"].values,
+    first_yr, first_mo = int(df["year"].iloc[0]),  int(df["month"].iloc[0])
+    last_yr,  last_mo  = int(df["year"].iloc[-1]), int(df["month"].iloc[-1])
+
+    spine = pd.DataFrame([
+        {"year": yr, "month": mo}
+        for yr in range(first_yr, last_yr + 1)
+        for mo in range(1, 13)
+        if (yr, mo) >= (first_yr, first_mo) and (yr, mo) <= (last_yr, last_mo)
+    ])
+
+    monthly = spine.merge(
+        df[["year", "month", "CH4_ppb"]],
+        on=["year", "month"],
+        how="left",
+    )
+    monthly["decdate"] = monthly["year"] + (monthly["month"] - 0.5) / 12
+    monthly["date"] = pd.to_datetime(
+        monthly["year"].astype(str) + "-" + monthly["month"].astype(str).str.zfill(2) + "-01"
+    )
+
+    good = monthly["CH4_ppb"].notna()
+    bad  = monthly["CH4_ppb"].isna()
+    monthly["filled"] = bad
+
+    if bad.any() and good.sum() >= 2:
+        pchip = PchipInterpolator(
+            monthly.loc[good, "decdate"].values,
+            monthly.loc[good, "CH4_ppb"].values,
+        )
+        monthly.loc[bad, "CH4_ppb"] = pchip(monthly.loc[bad, "decdate"].values)
+
+    # --------------------------------------------------
+    # 4. Growth rate (MATLAB method)
+    #    grwthrt(i) = mean(i+1:i+12) - mean(i-12:i-1)
+    # --------------------------------------------------
+    means = monthly["CH4_ppb"].values
+    n = len(means)
+    grwthrt = np.full(n, np.nan)
+
+    for i in range(12, n - 12):
+        grwthrt[i] = np.mean(means[i + 1: i + 13]) - np.mean(means[i - 12: i])
+
+    # 12-point moving average smoothing
+    grwthrt_filt = np.full(n, np.nan)
+    valid = ~np.isnan(grwthrt)
+    if valid.sum() > 12:
+        tmp = grwthrt.copy()
+        tmp[~valid] = 0.0
+        smoothed = uniform_filter1d(tmp, size=12, mode="nearest")
+        grwthrt_filt[valid] = smoothed[valid]
+
+    # Mask edge contamination (first/last 24 months)
+    grwthrt_filt[:24] = np.nan
+    grwthrt_filt[max(0, n - 24):] = np.nan
+
+    monthly["growth_rate"]      = grwthrt
+    monthly["growth_rate_filt"] = grwthrt_filt
+
+    # --------------------------------------------------
+    # 5. LOESS trend (fitted to filled monthly series)
+    # --------------------------------------------------
+    x_numeric = monthly["decdate"].values.astype(float)
+    monthly["loess_ppb"] = lowess(
+        endog=monthly["CH4_ppb"].values,
         exog=x_numeric,
         frac=loess_frac,
         return_sorted=False,
     )
-    df["loess_ppb"] = loess_vals
 
     # --------------------------------------------------
-    # 4. Annual rate of change from interpolated LOESS
+    # DEBUG
     # --------------------------------------------------
-    trend_series = (
-        df[["time", "loess_ppb"]]
-        .sort_values("time")
-        .groupby("time")["loess_ppb"]
-        .mean()
-    )
+    # print("=== Monthly (observed) ===")
+    # print(f"  rows: {good.sum()}, filled: {bad.sum()}")
+    # print(f"  CH4_ppb range: {monthly.loc[good, 'CH4_ppb'].min():.1f} → {monthly.loc[good, 'CH4_ppb'].max():.1f}")
+    # print(monthly[["date", "CH4_ppb", "filled"]].head(10).to_string(index=False))
 
-    max_year = int(df["time"].max().year)
-    year_starts = pd.date_range(
-        start=f"{year_min}-01-01",
-        end=f"{max_year}-01-01",
-        freq="YS",
-    )
-
-    loess_at_year_start = (
-        trend_series
-        .reindex(trend_series.index.union(year_starts))
-        .sort_index()
-        .interpolate(method="time")
-        .reindex(year_starts)
-    )
-
-    annual_df = pd.DataFrame({
-        "time": year_starts,
-        "year": year_starts.year,
-        "loess_year_value": loess_at_year_start.values,
-    })
-    annual_df["change_ppb_per_year"] = annual_df["loess_year_value"].diff()
-    change_df = annual_df.dropna(subset=["change_ppb_per_year"]).copy()
-    change_df["period"] = (
-        (change_df["year"] - 1).astype(str) + " to " + change_df["year"].astype(str)
-    )
+    # print("\n=== Growth rate ===")
+    # gr_valid = monthly["growth_rate_filt"].notna()
+    # print(f"  valid points: {gr_valid.sum()}")
+    # print(f"  range: {monthly['growth_rate_filt'].min():.2f} → {monthly['growth_rate_filt'].max():.2f}")
+    # print(monthly.loc[gr_valid, ["date", "growth_rate", "growth_rate_filt"]].head(10).to_string(index=False))
 
     # --------------------------------------------------
-    # 5. Build figure
+    # 6. Build figure
     # --------------------------------------------------
     fig = go.Figure()
 
-    # --- Left axis: observed CH4 ---
+    # --- Left axis: monthly values (observed + PCHIP filled) ---
     fig.add_trace(go.Scatter(
-        x=df["time"],
-        y=df["CH4_ppb"],
+        x=monthly["date"],
+        y=monthly["CH4_ppb"],
         mode="markers",
-        name="Observed",
-        marker=dict(size=6, color="#1f77b4", opacity=0.95),
-        hovertemplate="%{y:.0f} ppb<extra>Observed</extra>",
+        name="Monthly Mean",
+        marker=dict(size=5, color="#7ab8d9", opacity=0.85),
+        hovertemplate="%{y:.1f} ppb<extra>Monthly Mean</extra>",
         yaxis="y",
     ))
 
     # --- Left axis: LOESS trend ---
     fig.add_trace(go.Scatter(
-        x=df["time"],
-        y=df["loess_ppb"],
+        x=monthly["date"],
+        y=monthly["loess_ppb"],
         mode="lines",
         name="Trend",
-        line=dict(color="#e31a1c", width=2.3),
-        hovertemplate="%{y:.0f} ppb<extra>Trend</extra>",
+        line=dict(color="#003087", width=2.3),
+        hovertemplate="%{y:.1f} ppb<extra>Trend</extra>",
         yaxis="y",
     ))
 
-    # --- Right axis: faint connector ---
+    # --- Right axis: smoothed growth rate ---
+    growth_plot = monthly[monthly["growth_rate_filt"].notna()]
     fig.add_trace(go.Scatter(
-        x=change_df["time"],
-        y=change_df["change_ppb_per_year"],
-        mode="lines",
-        line=dict(color="rgba(44,160,44,0.35)", width=1.4, dash="dash"),
-        hoverinfo="skip",
-        showlegend=False,
-        yaxis="y2",
-    ))
-
-    # --- Right axis: annual change points ---
-    fig.add_trace(go.Scatter(
-        x=change_df["time"],
-        y=change_df["change_ppb_per_year"],
-        mode="markers",
+        x=growth_plot["date"],
+        y=growth_plot["growth_rate_filt"],
+        mode="lines+markers",
         name="Annual Change",
-        marker=dict(size=7, color="#2ca02c", opacity=0.95),
-        hovertemplate=(
-            "Period: %{customdata}<br>"
-            "Change: %{y:.2f} ppb/year<extra></extra>"
-        ),
-        customdata=change_df["period"],
+        line=dict(color="#e31a1c", width=1.8),
+        marker=dict(size=4, color="#e31a1c"),
+        hovertemplate="Annual Change: %{y:.2f} ppb/yr<extra></extra>",
         yaxis="y2",
     ))
 
     # --------------------------------------------------
-    # 6. Layout
+    # 7. Layout
     # --------------------------------------------------
     fig.update_layout(
         title="Atmospheric Methane (CH<sub>4</sub>), Arrival Heights, Antarctica, 1992-2024",
@@ -188,12 +226,12 @@ def plot_ch4_dual(
             showgrid=False,
             range=[
                 pd.Timestamp(f"{year_min}-01-01") - pd.DateOffset(months=4),
-                df["time"].max(),
+                monthly["date"].max(),
             ],
         ),
         yaxis=dict(
             title="CH<sub>4</sub> Mole Fraction (ppb)",
-            range=list(y_range),
+            range=[1550,1900],
             side="left",
             showline=True,
             linewidth=1.3,
@@ -203,7 +241,7 @@ def plot_ch4_dual(
         ),
         yaxis2=dict(
             title="CH<sub>4</sub> Annual Change (ppb/year)",
-            range=[-5, 40],
+            range=[-5, 50],
             side="right",
             overlaying="y",
             showline=True,
@@ -211,7 +249,7 @@ def plot_ch4_dual(
             linecolor="black",
             tickformat=".0f",
             showgrid=False,
-            tick0=-5,
+            tick0=0,
             dtick=5,
         ),
         legend=dict(
